@@ -179,6 +179,11 @@ stitch_frames(filtered_tab_frames, stitched_image_path)
 # 5. Run Audiveris
 
 def run_audiveris(image_path: Path, output_dir: Path):
+    for item in output_dir.glob('*'):
+        if item.is_file():
+            item.unlink()
+        elif item.is_dir():
+            shutil.rmtree(item)
     result = subprocess.run([
         "audiveris",
         "-batch",
