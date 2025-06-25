@@ -159,7 +159,22 @@ def save_tab_frames(frames, output_dir):
 
     return saved_paths
 
-save_tab_frames(filtered_tab_frames, output_dir="frames")
+
+def stitch_frames(frames, output_path):
+    if not frames:
+        raise ValueError("No frames to stitch")
+
+    # Resize all to same width (smallest width)
+    min_width = min(f.shape[1] for f in frames)
+    resized_frames = [cv.resize(f, (min_width, int(f.shape[0] * min_width / f.shape[1]))) for f in frames]
+
+    stitched = cv.vconcat(resized_frames)
+    cv.imwrite(str(output_path), stitched)
+    print(f"Stitched image saved to {output_path}")
+    return output_path
+
+stitched_image_path = Path("stitched_input.png")
+stitch_frames(filtered_tab_frames, stitched_image_path)
 
 # 5. Run Audiveris
 
@@ -177,24 +192,7 @@ def run_audiveris(image_path: Path, output_dir: Path):
     else:
         print(f"Processed {image_path.name}")
 
-input_folder = Path("frames/")
 output_folder = Path("audiveris_output/")
 output_folder.mkdir(exist_ok=True)
 
-for image in sorted(input_folder.glob("*.png")):
-    run_audiveris(image, output_folder)
-
-# 6. Merge output
-
-def merge_musicxml(folder: Path) -> stream.Score:
-    score = stream.Score()
-    for xml_file in sorted(folder.glob("*.xml")):
-        try:
-            part = converter.parse(xml_file)
-            score.append(part)
-        except Exception as e:
-            print(f"Skipping {xml_file.name}: {e}")
-    return score
-
-final_score = merge_musicxml(output_folder)
-final_score.write("musicxml", fp="final_score.xml")
+run_audiveris(stitched_image_path, output_folder)
