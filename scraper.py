@@ -176,28 +176,49 @@ def stitch_frames(frames, output_path):
 stitched_image_path = Path("stitched_input.png")
 stitch_frames(filtered_tab_frames, stitched_image_path)
 
-# 5. Run Audiveris
+# 5. Run OCR tabber
 
-def run_audiveris(image_path: Path, output_dir: Path):
+def run_ocr_tabber(image_path: Path, output_dir: Path):
     for item in output_dir.glob('*'):
         if item.is_file():
             item.unlink()
         elif item.is_dir():
             shutil.rmtree(item)
+
+    # Get absolute path to OCR-tabber's main script
+    tabber_script = Path("~/Projects/tab-scraper/OCR-tabber/src/ocr-tab.py").expanduser()
+
+    # Run OCR-tabber
     result = subprocess.run([
-        "audiveris",
-        "-batch",
-        str(image_path),
-        "-export",
-        "-output", str(output_dir)
+        "python",
+        str(tabber_script),
+        "-i", str(image_path),
+        "-o", str(output_dir / "tabs.txt")
     ], capture_output=True, text=True)
 
     if result.returncode != 0:
-        print(f"Error processing {image_path.name}:\n{result.stderr}")
-    else:
-        print(f"Processed {image_path.name}")
+        print(f"OCR-tabber error:\n{result.stderr}")
+        return []
 
-output_folder = Path("audiveris_output/")
+    with open(output_dir / "tabs.txt") as f:
+        return f.read().splitlines()
+
+output_folder = Path("tab_output/")
 output_folder.mkdir(exist_ok=True)
 
-run_audiveris(stitched_image_path, output_folder)
+def preprocess_for_ocr(img_path):
+    img = cv.imread(str(img_path), cv.IMREAD_GRAYSCALE)
+    _, binary = cv.threshold(img, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    processed_path = img_path.parent / f"processed_{img_path.name}"
+    cv.imwrite(str(processed_path), binary)
+    return processed_path
+
+processed_image = preprocess_for_ocr(stitched_image_path)
+recognized_tabs = run_ocr_tabber(processed_image, output_folder)
+
+print("\nRecognized Tablature:")
+for tab in recognized_tabs:
+    print(tab)
+
+with open(output_folder / "final_tabs.txt", "w") as f:
+    f.write("\n".join(recognized_tabs))
