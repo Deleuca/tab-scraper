@@ -2,6 +2,10 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.metrics import structural_similarity as ssim
+from pathlib import Path
+import shutil
+import subprocess
+from music21 import converter, stream
 
 video = input("Enter the video path: ")
 cap = cv.VideoCapture(video)
@@ -136,4 +140,61 @@ def browse_frames(frames):
 
     cv.destroyAllWindows()
 
-browse_frames(filtered_tab_frames)
+# 4. Write key frames
+
+def save_tab_frames(frames, output_dir):
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for item in output_dir.glob('*'):
+        if item.is_file():
+            item.unlink()
+        elif item.is_dir():
+            shutil.rmtree(item)
+    saved_paths = []
+
+    for idx, curr_frame in enumerate(frames):
+        path = output_dir / f"frame_{idx:03d}.png"
+        cv.imwrite(str(path), curr_frame)
+        saved_paths.append(path)
+
+    return saved_paths
+
+save_tab_frames(filtered_tab_frames, output_dir="frames")
+
+# 5. Run Audiveris
+
+def run_audiveris(image_path: Path, output_dir: Path):
+    result = subprocess.run([
+        "audiveris",
+        "-batch",
+        str(image_path),
+        "-export",
+        "-output", str(output_dir)
+    ], capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print(f"Error processing {image_path.name}:\n{result.stderr}")
+    else:
+        print(f"Processed {image_path.name}")
+
+input_folder = Path("frames/")
+output_folder = Path("audiveris_output/")
+output_folder.mkdir(exist_ok=True)
+
+for image in sorted(input_folder.glob("*.png")):
+    run_audiveris(image, output_folder)
+
+# 6. Merge output
+
+def merge_musicxml(folder: Path) -> stream.Score:
+    score = stream.Score()
+    for xml_file in sorted(folder.glob("*.xml")):
+        try:
+            part = converter.parse(xml_file)
+            score.append(part)
+        except Exception as e:
+            print(f"Skipping {xml_file.name}: {e}")
+    return score
+
+final_score = merge_musicxml(output_folder)
+final_score.write("musicxml", fp="final_score.xml")
