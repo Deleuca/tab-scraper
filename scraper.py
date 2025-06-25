@@ -188,20 +188,30 @@ def run_ocr_tabber(image_path: Path, output_dir: Path):
     # Get absolute path to OCR-tabber's main script
     tabber_script = Path("~/Projects/tab-scraper/OCR-tabber/src/ocr-tab.py").expanduser()
 
-    # Run OCR-tabber
-    result = subprocess.run([
-        "python",
-        str(tabber_script),
-        "-i", str(image_path),
-        "-o", str(output_dir / "tabs.txt")
-    ], capture_output=True, text=True)
+    try:
+        result = subprocess.run([
+            "python2",
+            str(tabber_script),
+            "-i", str(image_path),
+            "-o", str(output_dir / "tabs.txt")
+        ], capture_output=True, text=True)
+    except FileNotFoundError:
+        # Fall back to our Python 3 compatible version
+        result = subprocess.run([
+            "python",
+            str(tabber_script),
+            "-i", str(image_path),
+            "-o", str(output_dir / "tabs.txt")
+        ], capture_output=True, text=True)
 
     if result.returncode != 0:
         print(f"OCR-tabber error:\n{result.stderr}")
         return []
 
-    with open(output_dir / "tabs.txt") as f:
-        return f.read().splitlines()
+    if (output_dir / "tabs.txt").exists():
+        with open(output_dir / "tabs.txt") as f:
+            return f.read().splitlines()
+    return []
 
 output_folder = Path("tab_output/")
 output_folder.mkdir(exist_ok=True)
