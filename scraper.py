@@ -140,6 +140,8 @@ def browse_frames(frames):
 
     cv.destroyAllWindows()
 
+browse_frames(filtered_tab_frames)
+
 # 4. Write key frames
 
 def save_tab_frames(frames, output_dir):
