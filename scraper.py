@@ -11,8 +11,11 @@ video = input("Enter the video path: ")
 cap = cv.VideoCapture(video)
 
 
+# 1. Filtering frames
+
 def is_tab_frame(img, debug=False):
-    edges = cv.Canny(img, 50, 150, apertureSize=3)
+    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    edges = cv.Canny(gray, 50, 150, apertureSize=3)
 
     lines = cv.HoughLines(edges, 1, np.pi / 180, 200)
     horizontal_lines = 0
@@ -20,15 +23,13 @@ def is_tab_frame(img, debug=False):
     if lines is not None:
         for rho, theta in lines[:, 0]:
             angle = np.degrees(theta)
-            if abs(angle - 90) < 5:  # near-horizontal
+            if angle < 5 or angle > 175:  # horizontal lines
                 horizontal_lines += 1
 
     if debug:
         print("Horizontal lines detected:", horizontal_lines)
 
-    return bool(int(horizontal_lines >= 5))  # tune threshold
-
-# 1. Filtering frames
+    return horizontal_lines >= 5  # or adjust threshold
 
 total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
 
