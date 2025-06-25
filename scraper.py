@@ -115,7 +115,7 @@ for frame in tab_frames:
         cv.cvtColor(cropped, cv.COLOR_BGR2GRAY)
     )
 
-    if similarity < 0.85:  # new tab section
+    if similarity < 0.95:  # new tab section
         filtered_tab_frames.append(cropped)
         last_saved_frame = cropped
 
