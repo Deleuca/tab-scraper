@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from skimage.metrics import structural_similarity as ssim
 from pathlib import Path
 import shutil
-import subprocess
-from music21 import converter, stream
+import pytesseract
+from PIL import Image
 
 video = input("Enter the video path: ")
 cap = cv.VideoCapture(video)
@@ -176,59 +176,40 @@ def stitch_frames(frames, output_path):
 stitched_image_path = Path("stitched_input.png")
 stitch_frames(filtered_tab_frames, stitched_image_path)
 
-# 5. Run OCR tabber
+# 5. OCR
 
-def run_ocr_tabber(image_path: Path, output_dir: Path):
-    for item in output_dir.glob('*'):
-        if item.is_file():
-            item.unlink()
-        elif item.is_dir():
-            shutil.rmtree(item)
+# Optional: Whitelist only characters that appear in tabs
+tesseract_config = r'--oem 1 --psm 6 -c tessedit_char_whitelist=0123456789-ehABCDEFGabcdefg|/\\-'
 
-    # Get absolute path to OCR-tabber's main script
-    tabber_script = Path("~/Projects/tab-scraper/OCR-tabber/src/ocr-tab.py").expanduser()
+def ocr_image(image_path):
+    """Run OCR on a given image file path."""
+    img = Image.open(image_path)
+    return pytesseract.image_to_string(img, config=tesseract_config)
 
-    try:
-        result = subprocess.run([
-            "python2",
-            str(tabber_script),
-            "-i", str(image_path),
-            "-o", str(output_dir / "tabs.txt")
-        ], capture_output=True, text=True)
-    except FileNotFoundError:
-        # Fall back to our Python 3 compatible version
-        result = subprocess.run([
-            "python",
-            str(tabber_script),
-            "-i", str(image_path),
-            "-o", str(output_dir / "tabs.txt")
-        ], capture_output=True, text=True)
+def ocr_images_in_dir(image_paths):
+    """Run OCR on multiple image paths and return concatenated text."""
+    all_text = []
+    for path in image_paths:
+        text = ocr_image(path)
+        all_text.append(text.strip())
+    return "\n\n".join(all_text)
 
-    if result.returncode != 0:
-        print(f"OCR-tabber error:\n{result.stderr}")
-        return []
+output_dir = Path("tab_frames")
+image_paths = save_tab_frames(filtered_tab_frames, output_dir)
 
-    if (output_dir / "tabs.txt").exists():
-        with open(output_dir / "tabs.txt") as f:
-            return f.read().splitlines()
-    return []
+stitched_text = ocr_image(stitched_image_path)
+per_frame_text = ocr_images_in_dir(image_paths)
 
-output_folder = Path("tab_output/")
-output_folder.mkdir(exist_ok=True)
+# Pick the better one (based on length for now)
+if len(per_frame_text) > len(stitched_text):
+    print("Using OCR from individual frames (better character yield).")
+    tab_text = per_frame_text
+else:
+    print("Using OCR from stitched image (cleaner result).")
+    tab_text = stitched_text
 
-def preprocess_for_ocr(img_path):
-    img = cv.imread(str(img_path), cv.IMREAD_GRAYSCALE)
-    _, binary = cv.threshold(img, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-    processed_path = img_path.parent / f"processed_{img_path.name}"
-    cv.imwrite(str(processed_path), binary)
-    return processed_path
+# Save to file
+with open("extracted_tab.txt", "w") as f:
+    f.write(tab_text)
 
-processed_image = preprocess_for_ocr(stitched_image_path)
-recognized_tabs = run_ocr_tabber(processed_image, output_folder)
-
-print("\nRecognized Tablature:")
-for tab in recognized_tabs:
-    print(tab)
-
-with open(output_folder / "final_tabs.txt", "w") as f:
-    f.write("\n".join(recognized_tabs))
+print("Tab OCR extraction complete. Saved to 'extracted_tab.txt'.")
