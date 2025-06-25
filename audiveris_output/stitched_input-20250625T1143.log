@@ -1,0 +1,22 @@
+2025-06-25 11:43:33,339 INFO [stitched_input]                 Book.java:562  | 1 sheet in stitched_input.png
+2025-06-25 11:43:33,404 INFO []                 Book.java:2531 | Stored /book.xml
+2025-06-25 11:43:33,405 INFO []                 Book.java:2491 | Book stored as audiveris_output/stitched_input.omr
+2025-06-25 11:43:33,406 INFO []                 Book.java:1933 | Book reaching PAGE on sheets:[#1]
+2025-06-25 11:43:33,406 INFO [stitched_input]       StepMonitoring.java:98   | LOAD
+2025-06-25 11:43:33,462 INFO [stitched_input]            SheetStub.java:1268 | Loaded image #1 850x3600 from stitched_input.png
+2025-06-25 11:43:33,463 INFO [stitched_input]            ImageUtil.java:124  | Converting max RGB to gray
+2025-06-25 11:43:33,525 INFO [stitched_input]       StepMonitoring.java:98   | BINARY
+2025-06-25 11:43:33,666 INFO [stitched_input]       StepMonitoring.java:98   | SCALE
+2025-06-25 11:43:33,678 WARN [stitched_input]            SheetStub.java:412  | stitched_input   With a too low interline value of 7 pixels,  either this sheet contains no multi-line staves,  or the picture resolution is too low (try 300 DPI).   This interline value is NOT RELIABLE!
+2025-06-25 11:43:33,678 INFO [stitched_input]                 Book.java:545  | Created scores: []
+2025-06-25 11:43:33,678 INFO [stitched_input]            SheetStub.java:1186 | Sheet stitched_input flagged as invalid.
+2025-06-25 11:43:33,678 INFO [stitched_input]            SheetStub.java:1394 | StepException cause detected in [LOAD, BINARY, SCALE, GRID, HEADERS, STEM_SEEDS, BEAMS, LEDGERS, HEADS, STEMS, REDUCTION, CUE_BEAMS, TEXTS, MEASURES, CHORDS, CURVES, SYMBOLS, LINKS, RHYTHMS, PAGE]
+2025-06-25 11:43:33,678 INFO [stitched_input]                 Book.java:2550 | Book{stitched_input} storing
+2025-06-25 11:43:33,692 INFO [stitched_input]                 Book.java:2531 | Stored /book.xml
+2025-06-25 11:43:33,725 INFO [stitched_input]           DataHolder.java:348  | Stored /sheet#1/BINARY.png
+2025-06-25 11:43:33,812 INFO [stitched_input]                Sheet.java:1561 | Stored /sheet#1/sheet#1.xml
+2025-06-25 11:43:33,812 INFO [stitched_input]                 Book.java:2491 | Book stored as audiveris_output/stitched_input.omr
+2025-06-25 11:43:33,813 INFO [stitched_input]            SheetStub.java:1644 | Disposed sheet
+2025-06-25 11:43:33,859 INFO [stitched_input]                 Book.java:2018 | End of Stub#1 memory: 10,079,352
+2025-06-25 11:43:33,860 INFO [stitched_input]                 Book.java:2025 | Book processed.
+2025-06-25 11:43:33,860 INFO [stitched_input]                 Book.java:599  | Could not export since transcription did not complete successfully
