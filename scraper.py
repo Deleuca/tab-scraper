@@ -116,6 +116,9 @@ last_saved_frame = None
 
 filtered_tab_frames = []
 
+skip_first_frame = input("Skip first key frame? [y/N]: ").strip().lower()
+skip_first_frame = skip_first_frame == 'y'
+
 for frame in tab_frames:
     x1, y1 = top_left
     x2, y2 = bottom_right
@@ -123,6 +126,9 @@ for frame in tab_frames:
 
     if initial_frame is None:
         initial_frame = cropped
+        if not skip_first_frame:
+            filtered_tab_frames.append(cropped)
+            last_saved_frame = cropped
         continue
 
     if not burn_in_done:
