@@ -10,7 +10,7 @@ Required libraries:
 - matplotlib
 - scikit-image
 
-To clone the repository, run `git clone https://github.com/minigon/tab-scraper.git && cd tab-scraper`
+To clone the repository, run `git clone https://github.com/deleuca/tab-scraper.git && cd tab-scraper`
 
 To install the relevant packages, run: `pip install -r requirements.txt`
 
