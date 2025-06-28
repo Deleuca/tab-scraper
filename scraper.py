@@ -6,7 +6,11 @@ from pathlib import Path
 import shutil
 import sys
 
-video = input("Enter the video path: ")
+if len(sys.argv) != 2:
+    print("Usage: python scraper.py /path/to/vid")
+    sys.exit(1)
+
+video = sys.argv[1]
 cap = cv.VideoCapture(video)
 
 
@@ -143,6 +147,7 @@ for frame in tab_frames:
         last_saved_frame = cropped
 
 def browse_frames(frames):
+    # Add a call to this function if you'd like a sanity check
     index = 0
     total = len(frames)
 
@@ -162,8 +167,6 @@ def browse_frames(frames):
         cv.destroyAllWindows()
 
     cv.destroyAllWindows()
-
-browse_frames(filtered_tab_frames)
 
 # 4. Write key frames
 
