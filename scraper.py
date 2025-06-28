@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 from skimage.metrics import structural_similarity as ssim
 from pathlib import Path
 import shutil
-import pytesseract
-from PIL import Image
+import sys
 
 video = input("Enter the video path: ")
 cap = cv.VideoCapture(video)
@@ -31,6 +30,26 @@ def is_tab_frame(img, debug=False):
 
     return horizontal_lines >= 5  # or adjust threshold
 
+
+def print_progress(iteration, total, prefix='', suffix='', length=50, fill='█'):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+    """
+    percent = ("{0:.1f}").format(100 * (iteration / float(total)))
+    filled_length = int(length * iteration // total)
+    bar = fill * filled_length + '-' * (length - filled_length)
+    sys.stdout.write(f'\r{prefix} |{bar}| {percent}% {suffix}')
+    sys.stdout.flush()
+    if iteration == total:
+        print()
+
 total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
 
 frame_number = 0
@@ -44,13 +63,14 @@ while cap.isOpened():
             tab_frames.append(frame)
         if cv.waitKey(20) and 0xFF == ord("q"):
             break
-
-    if frame_number % 500 == 0:
-        print(frame_number, "/", total_frames)
+    if frame_number % 240 == 0:
+        print_progress(frame_number, total_frames)
     frame_number += 1
 
+print_progress(frame_number, total_frames)
 cap.release()
 cv.destroyAllWindows()
+print()
 
 # 2. Defining dimension
 
@@ -62,6 +82,7 @@ plt.show()
 def prompt_for_rectangle():
     print("Please enter the coordinates of the rectangle containing the tab area.")
     print("You will be asked for two points: top-left and bottom-right.")
+    print()
 
     def get_point(name):
         while True:
@@ -78,6 +99,7 @@ def prompt_for_rectangle():
     bottom_right = get_point("bottom-right")
 
     print(f"Tab region defined: top-left={top_left}, bottom-right={bottom_right}")
+    print()
     return top_left, bottom_right
 
 top_left, bottom_right = prompt_for_rectangle()
@@ -163,19 +185,57 @@ def save_tab_frames(frames, output_dir):
     return saved_paths
 
 
-def stitch_frames(frames, output_path):
+def clean_bw_conversion(img, blur_kernel=3, block_size=11, C=2, invert=False):
+    """
+    Convert colored image to clean black-and-white with minimal noise.
+
+    Parameters:
+    - img: Input BGR image
+    - blur_kernel: Gaussian blur kernel size (should be odd, 0 to disable)
+    - block_size: Adaptive threshold neighborhood size (must be odd)
+    - C: Constant subtracted from the mean
+    - invert: If True, flips black/white (useful for dark backgrounds)
+    """
+    # Convert to grayscale
+    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+
+    # Optional: Mild blur to reduce high-frequency noise
+    if blur_kernel > 0:
+        gray = cv.GaussianBlur(gray, (blur_kernel, blur_kernel), 0)
+
+    # Adaptive thresholding (better than global thresholding)
+    thresh = cv.adaptiveThreshold(
+        gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv.THRESH_BINARY, block_size, C
+    )
+
+    # Invert if needed (for dark backgrounds)
+    if invert:
+        thresh = 255 - thresh
+
+    return thresh
+
+
+def stitch_frames(frames):
     if not frames:
         raise ValueError("No frames to stitch")
 
-    # Resize all to same width (smallest width)
     min_width = min(f.shape[1] for f in frames)
     resized_frames = [cv.resize(f, (min_width, int(f.shape[0] * min_width / f.shape[1]))) for f in frames]
 
-    stitched = cv.vconcat(resized_frames)
-    cv.imwrite(str(output_path), stitched)
-    print(f"Stitched image saved to {output_path}")
-    return output_path
+    img = cv.vconcat(resized_frames)
+    return img
 
-stitched_image_path = Path("stitched_input.png")
-stitch_frames(filtered_tab_frames, stitched_image_path)
+
+output_path = Path("output.png")
+stitch = stitch_frames(filtered_tab_frames)
+
+gray = input("Apply b/w conversion? [Y/n]: ")
+if gray == "n":
+    cv.imwrite(str(output_path), stitch)
+else:
+    cv.imwrite(str(output_path), clean_bw_conversion(stitch))
+
+print()
+print(f"Stitched image saved to {output_path}")
 
