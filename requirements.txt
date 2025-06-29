@@ -1,4 +1,5 @@
 opencv-python
-numpy
-matplotlib
-scikit-image
+numpy~=2.3.1
+matplotlib~=3.10.3
+scikit-image~=0.25.2
+python-slugify~=8.0.4

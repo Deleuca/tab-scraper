@@ -2,16 +2,63 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.metrics import structural_similarity as ssim
+from slugify import slugify
 from pathlib import Path
 import shutil
 import sys
+import subprocess
+import json
 
 if len(sys.argv) != 2:
-    print("Usage: python scraper.py /path/to/vid")
+    print("Usage: python scraper.py <youtube-url>")
     sys.exit(1)
 
-video = sys.argv[1]
-cap = cv.VideoCapture(video)
+def download_youtube_video(url, output_dir="downloads"):
+    # Ensure output directory exists
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Use yt-dlp to get metadata as JSON
+    print("Fetching video info...")
+    result = subprocess.run(
+        ["yt-dlp", "-j", url],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+    metadata = json.loads(result.stdout)
+    title = metadata['title']
+    safe_title = slugify(title)
+    filename = f"{safe_title}.mp4"
+    filepath = Path(output_dir) / filename
+
+    # Check if already exists
+    if filepath.exists():
+        print(f"Video already exists: {filepath}")
+        return filepath
+
+    # Actually download the video at preferred resolution
+    print("Downloading video...")
+    subprocess.run([
+        "yt-dlp",
+        "-f", (
+            "bestvideo[height=720]+bestaudio/"
+            "bestvideo[height=480]+bestaudio/"
+            "bestvideo[height=360]+bestaudio/"
+            "bestvideo[height=240]+bestaudio"
+        ),
+        "--merge-output-format", "mp4",
+        "--recode-video", "mp4",
+        "-o", str(filepath),
+        url
+    ], check=True)
+
+    print(f"Downloaded: {filepath}")
+    return filepath
+
+video_url = sys.argv[1]
+video = download_youtube_video(video_url)
+print(video)
+cap = cv.VideoCapture(str(video))
 
 
 # 1. Filtering frames
